@@ -122,12 +122,15 @@ routes.validity.POST = function(req, res) {
 			return;
 		}
 
-		return opts.mailer.send({
+		// We intenttionally handle the promise here and not chain it with the request since this action might take more time than HTTP request has.
+		opts.mailer.send({
 			from: opts.smtp.from || 'app@example.com',
 			to: req.user.email,
 			subject: msg.subject,
 			body: msg.body
-		});
+		}).fail(function(err) {
+			debug.error('Sending email to ' + req.user.email + ' failed:', err);
+		}).done();
 
 	}).then(function() {
 		res.redirect(303, ref(req, opts.path + '/validity') );

@@ -1,6 +1,6 @@
 {
   "name": "nor-api-profile",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Profile API module",
   "main": "src/profile.js",
   "scripts": {
