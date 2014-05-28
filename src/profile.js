@@ -32,23 +32,36 @@ var profile_builder = module.exports = function profile_builder(opts) {
 	debug.assert(opts.messages.success).is('string');
 	debug.assert(opts.messages.fail).is('string');
 
+	if(!opts.view) {
+		opts.view = {
+			'element': function(req, res) {
+				return function(user) {
+					user = strip(req.user).specials().unset('password').unset('orig').get();
+					user.$id = req.user.$id;
+					user.$created = req.user.$created;
+					user.$type = req.user.$type;
+					user.validity = {
+						'status': !!( req.user.email_valid ),
+						'email_sent': !!( req.user.email_validation_hash ),
+						'$ref': ref(req, opts.path + '/validity')
+					};
+					user.$ref = ref(req, opts.path);
+					return user;
+				}
+			}
+		};
+	}
+
+
 	var routes = {};
 
 	/** Returns connected user data */
 	routes.GET = function(req, res) {
 		if(!req.user) { throw new HTTPError(401); }
 		debug.assert(req.user).is('object');
-		var user = strip(req.user).specials().unset('password').unset('orig').get();
-		user.$id = req.user.$id;
-		user.$created = req.user.$created;
-		user.$type = req.user.$type;
-		user.validity = {
-			'status': !!( req.user.email_valid ),
-			'email_sent': !!( req.user.email_validation_hash ),
-			'$ref': ref(req, opts.path + '/validity')
-		};
-		user.$ref = ref(req, opts.path);
-		return user;
+		return opts.view.element(req, res)(req.user, {
+			'elementPath': 'api/profile'
+		});
 	};
 
 	/** Changes current profile data */
