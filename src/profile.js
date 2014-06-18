@@ -22,6 +22,8 @@ var profile_builder = module.exports = function profile_builder(opts) {
 	opts.messages.success = opts.messages.success || 'Your email address has been verified successfully.';
 	opts.messages.fail = opts.messages.fail || 'Your email address validation failed. Please request validation again.';
 
+	opts.changeable_fields = opts.changeable_fields || ['password', 'password2'];
+
 	debug.assert(opts.pg).is('string');
 	debug.assert(opts.path).is('string');
 	debug.assert(opts.user_type).is('string');
@@ -31,6 +33,7 @@ var profile_builder = module.exports = function profile_builder(opts) {
 	debug.assert(opts.messages).is('object');
 	debug.assert(opts.messages.success).is('string');
 	debug.assert(opts.messages.fail).is('string');
+	debug.assert(opts.changeable_fields).is('array');
 
 	if(!opts.view) {
 		opts.view = {
@@ -59,9 +62,9 @@ var profile_builder = module.exports = function profile_builder(opts) {
 	routes.GET = function(req, res) {
 		if(!req.user) { throw new HTTPError(401); }
 		debug.assert(req.user).is('object');
-		return opts.view.element(req, res)(req.user, {
+		return opts.view.element(req, res, {
 			'elementPath': 'api/profile'
-		});
+		})(req.user);
 	};
 
 	/** Changes current profile data */
@@ -72,12 +75,15 @@ var profile_builder = module.exports = function profile_builder(opts) {
 		debug.assert(req.user.$id).is('string');
 		debug.assert(req.body).is('object');
 		//debug.log('req.body = ', req.body);
-		var data = helpers.parse_body_params(req, ['password', 'password2']);
+		var data = helpers.parse_body_params(req, opts.changeable_fields);
 		if(data.password) {
 			if(data.password !== data.password2) {
 				throw new TypeError("Passwords do not match");
 			}
 			data.password = crypt(data.password, crypt.createSalt('md5'));
+		}
+		if(data.password2) {
+			delete data.password2;
 		}
 		return $Q(NoPg.start(opts.pg).search(opts.user_type)({'$id': req.user.$id}).then(function(db) {
 			var users = db.fetch();
@@ -85,7 +91,7 @@ var profile_builder = module.exports = function profile_builder(opts) {
 			var user = users.shift();
 			debug.assert(user).is('object');
 			//debug.log("user = ", user);
-			return db.update(user, {"password": data.password} ).commit();
+			return db.update(user, data ).commit();
 		}).then(function() {
 			res.redirect(303, ref(req, opts.path) );
 		}));
