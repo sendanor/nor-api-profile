@@ -40,6 +40,7 @@ module.exports = function validity_builder(opts) {
 	opts.messages = opts.messages || {};
 	opts.messages.success = opts.messages.success || 'Your email address has been verified successfully.';
 	opts.messages.fail = opts.messages.fail || 'Your email address validation failed. Please request validation again.';
+	opts.messages.login_first = opts.messages.login_first || 'You must login first';
 
 	if(!is.defined(opts.get_user)) {
 		opts.get_user = function get_user(req/*, res*/) {
@@ -174,7 +175,7 @@ module.exports = function validity_builder(opts) {
 		return _Q.fcall(function() {
 			return opts.get_user(req, res);
 		}).then(function(req_user) {
-			if(!req_user) { throw new HTTPError(401, "You must login first."); }
+			if(!req_user) { throw new HTTPError(401, ''+opts.messages.login_first); }
 			var user_uuid = is.uuid(req_user) ? req_user : ( is.obj(req_user) && is.uuid(req_user.$id) ? req_user.$id : undefined );
 
 			debug.assert(req.params).is('object');
