@@ -9,6 +9,7 @@ var is = require('nor-is');
 var HTTPError = require('nor-express').HTTPError;
 var ref = require('nor-ref');
 var crypt = require('crypt3');
+var NR = require('nor-newrelic');
 
 /** Returns nor-express based profile resource */
 var validity_builder = module.exports = function validity_builder(opts) {
@@ -19,7 +20,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 	if(is.undef(opts.path)) {
 		opts.path = 'api/profile/validity';
 	}
-	
+
 	if(is.string(opts.path)) {
 		opts.path = function(path, req, res) {
 			return ref(req, path);
@@ -29,7 +30,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 	if(is.undef(opts.verify_path)) {
 		opts.verify_path = 'api/profile/validity/verify';
 	}
-	
+
 	if(is.string(opts.verify_path)) {
 		opts.verify_path = function(path, req, res, secret_uuid) {
 			return ref(req, path, secret_uuid);
@@ -101,7 +102,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 			}
 			throw new TypeError("Invalid params");
 		}).then(function(user_uuid) {
-	
+
 			var secret_uuid = require('node-uuid').v4();
 			var crypted_secret_uuid = crypt(secret_uuid, crypt.createSalt('md5'));
 			var secret_url = opts.verify_path(req, res, secret_uuid);
@@ -114,32 +115,40 @@ var validity_builder = module.exports = function validity_builder(opts) {
 					return user;
 				});
 			}).then(function(user) {
-	
+
 				var msg = opts.verification_message({
 					'user': user,
 					'secret_uuid': secret_uuid,
 					'secret_url': secret_url
 				});
-	
+
 				if(is.array(msg.body)) {
 					msg.body = msg.body.join('\n');
 				}
-	
+
 				// Ignore @example.com emails
 				if(user.email.substr(user.email.indexOf('@')) === '@example.com') {
 					return;
 				}
-	
-				// We intenttionally handle the promise here and not chain it with the request since this action might take more time than HTTP request has.
-				opts.mailer.send({
-					from: opts.smtp.from || 'app@example.com',
-					to: user.email,
-					subject: msg.subject,
-					body: msg.body
-				}).fail(function(err) {
-					debug.error('Sending email to ' + user.email + ' failed:', err);
-				}).done();
-		
+
+				/* We intentionally handle the promise here (with optional NewRelic support)
+				 * and not chain it with the request since this action might take more time
+				 * than the HTTP request has time to wait.
+				 */
+
+				NR.wtfcall("/mailer/sending/validity-email", function() {
+					var from = opts.smtp.from || 'no-reply@example.com';
+					debug.log('Sending email to ', user.email, ' (with from:', from, ')');
+					return opts.mailer.send({
+						from: from,
+						to: user.email,
+						subject: msg.subject,
+						body: msg.body
+					}).fail(function(err) {
+						debug.error('Sending email to ' + user.email + ' failed:', err);
+					});
+				});
+
 			}).then(function() {
 				res.redirect(303, opts.path(req, res) );
 			}));
@@ -167,30 +176,30 @@ var validity_builder = module.exports = function validity_builder(opts) {
 		}).then(function(req_user) {
 			if(!req_user) { throw new HTTPError(401, "You must login first."); }
 			var user_uuid = is.uuid(req_user) ? req_user : ( is.obj(req_user) && is.uuid(req_user.$id) ? req_user.$id : undefined );
-			
+
 			debug.assert(req.params).is('object');
 			debug.assert(req.params.uuid).is('uuid');
 			debug.assert(req.session).is('object');
-	
+
 			if(!req.session.client) {
 				req.session.client = {};
 			}
-	
+
 			if( (!is.obj(req.session.client.messages)) || is.array(req.session.client.messages) ) {
 				req.session.client.messages = {};
 			}
-	
+
 			var secret_uuid = req.params.uuid;
 
 			return Q(NoPg.start(opts.pg).searchSingle(opts.user_type)({'$id': user_uuid}).then(function(db) {
 				var user = db.fetch();
 				debug.assert(user.email_validation_hash).is('string');
-		
+
 				var crypted_secret_uuid = crypt(secret_uuid, user.email_validation_hash);
 				if(user.email_validation_hash !== crypted_secret_uuid) {
 					throw new HTTPError(403, "Forbidden");
 				}
-		
+
 				return db.update(user, {
 					'email_valid': true,
 					'email_validation_hash': ''
@@ -207,7 +216,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 					});
 					return db.rollback();
 				});
-		
+
 			}).then(function() {
 				res.redirect(303, ref(req, '/') );
 			}));
