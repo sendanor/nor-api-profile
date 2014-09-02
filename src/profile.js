@@ -6,14 +6,14 @@ var $Q = require('q');
 var NoPg = require('nor-nopg');
 var strip = require('nor-nopg').strip;
 var debug = require('nor-debug');
-var is = require('nor-is');
+//var is = require('nor-is');
 var HTTPError = require('nor-express').HTTPError;
 var ref = require('nor-ref');
 var crypt = require('crypt3');
 var helpers = require('nor-api-helpers');
 
 /** Returns nor-express based profile resource */
-var profile_builder = module.exports = function profile_builder(opts) {
+module.exports = function profile_builder(opts) {
 	opts = opts || {};
 
 	opts.user_type = opts.user_type || 'User';
@@ -37,7 +37,7 @@ var profile_builder = module.exports = function profile_builder(opts) {
 
 	if(!opts.view) {
 		opts.view = {
-			'element': function(req, res) {
+			'element': function(req/*, res*/) {
 				return function(user) {
 					user = strip(req.user).specials().unset('password').unset('orig').get();
 					user.$id = req.user.$id;
@@ -50,7 +50,7 @@ var profile_builder = module.exports = function profile_builder(opts) {
 					};
 					user.$ref = ref(req, opts.path);
 					return user;
-				}
+				};
 			}
 		};
 	}

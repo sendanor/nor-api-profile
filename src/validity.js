@@ -2,8 +2,8 @@
 
 "use strict";
 
-var Q = require('q');
-var NoPg = require('nor-nopg');
+var _Q = require('q');
+var nopg = require('nor-nopg');
 var debug = require('nor-debug');
 var is = require('nor-is');
 var HTTPError = require('nor-express').HTTPError;
@@ -12,7 +12,7 @@ var crypt = require('crypt3');
 var NR = require('nor-newrelic');
 
 /** Returns nor-express based profile resource */
-var validity_builder = module.exports = function validity_builder(opts) {
+module.exports = function validity_builder(opts) {
 	opts = opts || {};
 
 	opts.user_type = opts.user_type || 'User';
@@ -22,7 +22,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 	}
 
 	if(is.string(opts.path)) {
-		opts.path = function(path, req, res) {
+		opts.path = function(path, req/*, res*/) {
 			return ref(req, path);
 		}.bind(undefined, opts.path);
 	}
@@ -42,7 +42,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 	opts.messages.fail = opts.messages.fail || 'Your email address validation failed. Please request validation again.';
 
 	if(!is.defined(opts.get_user)) {
-		opts.get_user = function get_user(req, res) {
+		opts.get_user = function get_user(req/*, res*/) {
 			if(!req.user) { return; }
 			return req.user;
 		};
@@ -64,7 +64,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 
 	/** */
 	routes.GET = function(req, res) {
-		return Q.fcall(function() {
+		return _Q.fcall(function() {
 			return opts.get_user(req, res);
 		}).then(function(user) {
 			if(is.undef(user)) { throw new HTTPError(401); }
@@ -76,7 +76,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 			}
 			throw new TypeError("Invalid params");
 		}).then(function(uuid) {
-			return Q(NoPg.start(opts.pg).searchSingle(opts.user_type)({'$id': uuid}).commit().then(function(db) {
+			return _Q(nopg.start(opts.pg).searchSingle(opts.user_type)({'$id': uuid}).commit().then(function(db) {
 				return db.fetch();
 			}));
 		}).then(function(user) {
@@ -90,7 +90,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 
 	/** */
 	routes.POST = function(req, res) {
-		return Q.fcall(function() {
+		return _Q.fcall(function() {
 			return opts.get_user(req, res);
 		}).then(function(user) {
 			if(is.undef(user)) { throw new HTTPError(401); }
@@ -107,7 +107,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 			var crypted_secret_uuid = crypt(secret_uuid, crypt.createSalt('md5'));
 			var secret_url = opts.verify_path(req, res, secret_uuid);
 
-			return Q(NoPg.start(opts.pg).searchSingle(opts.user_type)({'$id': user_uuid}).then(function(db) {
+			return _Q(nopg.start(opts.pg).searchSingle(opts.user_type)({'$id': user_uuid}).then(function(db) {
 				var user = db.fetch();
 				return db.update(user, {
 					'email_validation_hash': crypted_secret_uuid
@@ -171,7 +171,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 
 	/** */
 	routes.verify[':uuid'].GET = function(req, res) {
-		return Q.fcall(function() {
+		return _Q.fcall(function() {
 			return opts.get_user(req, res);
 		}).then(function(req_user) {
 			if(!req_user) { throw new HTTPError(401, "You must login first."); }
@@ -191,7 +191,7 @@ var validity_builder = module.exports = function validity_builder(opts) {
 
 			var secret_uuid = req.params.uuid;
 
-			return Q(NoPg.start(opts.pg).searchSingle(opts.user_type)({'$id': user_uuid}).then(function(db) {
+			return _Q(nopg.start(opts.pg).searchSingle(opts.user_type)({'$id': user_uuid}).then(function(db) {
 				var user = db.fetch();
 				debug.assert(user.email_validation_hash).is('string');
 
