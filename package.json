@@ -1,6 +1,6 @@
 {
   "name": "nor-api-profile",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Profile API module",
   "main": "src/index.js",
   "scripts": {
@@ -27,7 +27,7 @@
     "nor-debug":       ">= 0.1.42 < 0.2.0",
     "nor-is":          ">= 0.1.14 < 0.2.0",
     "nor-express":     ">= 0.1.44 < 0.2.0",
-    "nor-ref":         ">= 0.1.0  < 0.2.0",
+    "nor-ref":         ">= 0.1.1  < 0.2.0",
     "nor-newrelic":    ">= 0.1.11 < 0.2.0",
     "crypt3":          ">= 0.1.5  < 0.2.0",
     "nor-api-helpers": ">= 0.1.4  < 0.2.0",
