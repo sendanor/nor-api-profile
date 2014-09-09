@@ -147,6 +147,7 @@ module.exports = function validity_builder(opts) {
 						body: msg.body
 					}).fail(function(err) {
 						debug.error('Sending email to ' + user.email + ' failed:', err);
+						return _Q.reject(err);
 					});
 				});
 
