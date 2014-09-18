@@ -17,6 +17,9 @@ module.exports = function validity_builder(opts) {
 
 	opts.user_type = opts.user_type || 'User';
 
+	// The path where to redirect if user verifies successfully
+	opts.success_redirect_target = opts.success_redirect_target || '/';
+
 	if(is.undef(opts.path)) {
 		opts.path = 'api/profile/validity';
 	}
@@ -54,7 +57,7 @@ module.exports = function validity_builder(opts) {
 	debug.assert(opts.user_type).is('string');
 	debug.assert(opts.smtp).is('object');
 	debug.assert(opts.mailer).is('object');
-	debug.assert(opts.verification_message).is('function');
+	debug.assert(opts.verification_message).is('defined');
 	debug.assert(opts.messages).is('object');
 	debug.assert(opts.messages.success).is('string');
 	debug.assert(opts.messages.fail).is('string');
@@ -117,37 +120,57 @@ module.exports = function validity_builder(opts) {
 				});
 			}).then(function(user) {
 
-				var msg = opts.verification_message({
-					'user': user,
-					'secret_uuid': secret_uuid,
-					'secret_url': secret_url
-				});
-
-				if(is.array(msg.body)) {
-					msg.body = msg.body.join('\n');
-				}
-
 				// Ignore @example.com emails
 				if(user.email.substr(user.email.indexOf('@')) === '@example.com') {
 					return;
 				}
 
-				/* We intentionally handle the promise here (with optional NewRelic support)
-				 * and not chain it with the request since this action might take more time
-				 * than the HTTP request has time to wait.
-				 */
+				var msg_params = {
+					'user': user,
+					'secret_uuid': secret_uuid,
+					'secret_url': secret_url
+				};
 
-				NR.wtfcall("/mailer/sending/validity-email", function() {
-					var from = opts.smtp.from || 'no-reply@example.com';
-					debug.log('Sending email to ', user.email, ' (with from:', from, ')');
-					return opts.mailer.send({
-						from: from,
-						to: user.email,
-						subject: msg.subject,
-						body: msg.body
-					}).fail(function(err) {
-						debug.error('Sending email to ' + user.email + ' failed:', err);
-						return _Q.reject(err);
+				return _Q.fcall(function() {
+					if(!is.func(opts.verification_message)) {
+						return opts.verification_message;
+					}
+					return opts.verification_message(msg_params, req, res);
+				}).then(function(msg) {
+					if(is.array(msg.body)) {
+						msg.body = msg.body.join('\n');
+					}
+
+					debug.assert(msg).is('object');
+					debug.assert(msg.subject).is('string');
+					debug.assert(msg.body).is('string');
+
+					// Convert parameters
+					msg.subject = msg.subject.replace(/%{([^}]+)}/g, function(m, key) {
+						return msg_params[key];
+					});
+
+					msg.body = msg.body.replace(/%{([^}]+)}/g, function(m, key) {
+						return msg_params[key];
+					});
+
+					/* We intentionally handle the promise here (with optional NewRelic support)
+					 * and not chain it with the request since this action might take more time
+					 * than the HTTP request has time to wait.
+					 */
+
+					NR.wtfcall("/mailer/sending/validity-email", function() {
+						var from = opts.smtp.from || 'no-reply@example.com';
+						debug.log('Sending email to ', user.email, ' (with from:', from, ')');
+						return opts.mailer.send({
+							from: from,
+							to: user.email,
+							subject: msg.subject,
+							body: msg.body
+						}).fail(function(err) {
+							debug.error('Sending email to ' + user.email + ' failed:', err);
+							return _Q.reject(err);
+						});
 					});
 				});
 
@@ -220,7 +243,7 @@ module.exports = function validity_builder(opts) {
 				});
 
 			}).then(function() {
-				res.redirect(303, ref(req, '/') );
+				res.redirect(303, ref(req, opts.success_redirect_target) );
 			}));
 		});
 	};
