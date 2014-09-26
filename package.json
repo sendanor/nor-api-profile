@@ -23,7 +23,7 @@
   "homepage": "https://github.com/sendanor/nor-api-profile",
   "dependencies": {
     "q":               ">= 1.0.1  < 1.1.0",
-    "nor-nopg":        ">= 0.1.82 < 0.2.0",
+    "nor-nopg":        ">= 0.1.83 < 0.2.0",
     "nor-debug":       ">= 0.1.42 < 0.2.0",
     "nor-is":          ">= 0.1.14 < 0.2.0",
     "nor-express":     ">= 0.1.46 < 0.2.0",
