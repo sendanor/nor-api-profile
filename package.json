@@ -1,6 +1,6 @@
 {
   "name": "nor-api-profile",
-  "version": "0.1.27",
+  "version": "0.1.28",
   "description": "Profile API module",
   "main": "src/index.js",
   "scripts": {
@@ -23,14 +23,14 @@
   "homepage": "https://github.com/sendanor/nor-api-profile",
   "dependencies": {
     "q":               ">= 1.0.1  < 1.1.0",
-    "nor-nopg":        ">= 0.1.87 < 0.2.0",
-    "nor-debug":       ">= 0.1.43 < 0.2.0",
-    "nor-is":          ">= 0.1.14 < 0.2.0",
-    "nor-express":     ">= 0.1.47 < 0.2.0",
-    "nor-ref":         ">= 0.1.1  < 0.2.0",
-    "nor-newrelic":    ">= 0.1.14 < 0.2.0",
+    "nor-nopg":        ">= 0.1.88 < 0.2.0",
+    "nor-debug":       ">= 0.1.44 < 0.2.0",
+    "nor-is":          ">= 0.1.15 < 0.2.0",
+    "nor-express":     ">= 0.1.48 < 0.2.0",
+    "nor-ref":         ">= 0.1.2  < 0.2.0",
+    "nor-newrelic":    ">= 0.1.15 < 0.2.0",
     "crypt3":          ">= 0.1.5  < 0.2.0",
-    "nor-api-helpers": ">= 0.1.5  < 0.2.0",
+    "nor-api-helpers": ">= 0.1.6  < 0.2.0",
     "node-uuid":       ">= 1.4.1  < 1.5.0"
   },
   "devDependencies": {
