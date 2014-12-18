@@ -9,7 +9,21 @@ var is = require('nor-is');
 var HTTPError = require('nor-express').HTTPError;
 var ref = require('nor-ref');
 var crypt = require('crypt3');
+var FUNCTION = require('nor-function');
 var NR = require('nor-newrelic');
+
+function ref_req_path (path, req/*, res*/) {
+	return ref(req, path);
+}
+
+function verify_path_ref(path, req, res, secret_uuid) {
+	return ref(req, path, secret_uuid);
+}
+
+function get_user(req/*, res*/) {
+	if(!req.user) { return; }
+	return req.user;
+}
 
 /** Returns nor-express based profile resource */
 module.exports = function validity_builder(opts) {
@@ -25,9 +39,7 @@ module.exports = function validity_builder(opts) {
 	}
 
 	if(is.string(opts.path)) {
-		opts.path = function(path, req/*, res*/) {
-			return ref(req, path);
-		}.bind(undefined, opts.path);
+		opts.path = FUNCTION(ref_req_path).curry(opts.path);
 	}
 
 	if(is.undef(opts.verify_path)) {
@@ -35,9 +47,7 @@ module.exports = function validity_builder(opts) {
 	}
 
 	if(is.string(opts.verify_path)) {
-		opts.verify_path = function(path, req, res, secret_uuid) {
-			return ref(req, path, secret_uuid);
-		}.bind(undefined, opts.verify_path);
+		opts.verify_path = FUNCTION(verify_path_ref).curry(opts.verify_path);
 	}
 
 	opts.messages = opts.messages || {};
@@ -46,10 +56,7 @@ module.exports = function validity_builder(opts) {
 	opts.messages.login_first = opts.messages.login_first || 'You must login first';
 
 	if(!is.defined(opts.get_user)) {
-		opts.get_user = function get_user(req/*, res*/) {
-			if(!req.user) { return; }
-			return req.user;
-		};
+		opts.get_user = get_user;
 	}
 
 	debug.assert(opts.pg).is('string');
