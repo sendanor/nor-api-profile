@@ -55,46 +55,49 @@ module.exports = function profile_builder(opts) {
 		};
 	}
 
-
 	var routes = {};
 
 	/** Returns connected user data */
-	routes.GET = function(req, res) {
-		if(!req.user) { throw new HTTPError(401); }
-		debug.assert(req.user).is('object');
-		return opts.view.element(req, res, {
-			'elementPath': 'api/profile'
-		})(req.user);
+	routes.GET = function profile_get(req, res) {
+		return $Q.fcall(function profile_get_() {
+			if(!req.user) { throw new HTTPError(401); }
+			debug.assert(req.user).is('object');
+			return opts.view.element(req, res, {
+				'elementPath': 'api/profile'
+			})(req.user);
+		});
 	};
 
 	/** Changes current profile data */
 	routes.POST = function api_profile_post(req, res) {
-		//debug.log('req.user = ', req.user);
-		if(!req.user) { throw new HTTPError(500); }
-		debug.assert(req.user).is('object');
-		debug.assert(req.user.$id).is('string');
-		debug.assert(req.body).is('object');
-		//debug.log('req.body = ', req.body);
-		var data = helpers.parse_body_params(req, opts.changeable_fields);
-		if(data.password) {
-			if(data.password !== data.password2) {
-				throw new TypeError("Passwords do not match");
+		return $Q.fcall(function api_profile_post_() {
+			//debug.log('req.user = ', req.user);
+			if(!req.user) { throw new HTTPError(500); }
+			debug.assert(req.user).is('object');
+			debug.assert(req.user.$id).is('string');
+			debug.assert(req.body).is('object');
+			//debug.log('req.body = ', req.body);
+			var data = helpers.parse_body_params(req, opts.changeable_fields);
+			if(data.password) {
+				if(data.password !== data.password2) {
+					throw new TypeError("Passwords do not match");
+				}
+				data.password = crypt(data.password, crypt.createSalt('md5'));
 			}
-			data.password = crypt(data.password, crypt.createSalt('md5'));
-		}
-		if(data.password2) {
-			delete data.password2;
-		}
-		return $Q(NoPg.start(opts.pg).search(opts.user_type)({'$id': req.user.$id}).then(function(db) {
-			var users = db.fetch();
-			debug.assert(users).is('object').instanceOf(Array);
-			var user = users.shift();
-			debug.assert(user).is('object');
-			//debug.log("user = ", user);
-			return db.update(user, data ).commit();
-		}).then(function() {
-			res.redirect(303, ref(req, opts.path) );
-		}));
+			if(data.password2) {
+				delete data.password2;
+			}
+			return $Q(NoPg.start(opts.pg).search(opts.user_type)({'$id': req.user.$id}).then(function(db) {
+				var users = db.fetch();
+				debug.assert(users).is('object').instanceOf(Array);
+				var user = users.shift();
+				debug.assert(user).is('object');
+				//debug.log("user = ", user);
+				return db.update(user, data ).commit();
+			}).then(function() {
+				res.redirect(303, ref(req, opts.path) );
+			}));
+		});
 	};
 
 	/** Validity support */

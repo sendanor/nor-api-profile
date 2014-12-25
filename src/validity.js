@@ -74,10 +74,10 @@ module.exports = function validity_builder(opts) {
 	var routes = {};
 
 	/** */
-	routes.GET = function(req, res) {
-		return _Q.fcall(function() {
+	routes.GET = function validity_get(req, res) {
+		return _Q.fcall(function validity_get_() {
 			return opts.get_user(req, res);
-		}).then(function(user) {
+		}).then(function validity_get_2(user) {
 			if(is.undef(user)) { throw new HTTPError(401); }
 			if(is.obj(user) && is.uuid(user.$id)) {
 				return user.$id;
@@ -86,11 +86,11 @@ module.exports = function validity_builder(opts) {
 				return user;
 			}
 			throw new TypeError("Invalid params");
-		}).then(function(uuid) {
+		}).then(function validity_get_3(uuid) {
 			return _Q(nopg.start(opts.pg).searchSingle(opts.user_type)({'$id': uuid}).commit().then(function(db) {
 				return db.fetch();
 			}));
-		}).then(function(user) {
+		}).then(function validity_get_4(user) {
 			return {
 				'status': !!( user.email_valid ),
 				'email_sent': !!( user.email_validation_hash ),
@@ -100,10 +100,10 @@ module.exports = function validity_builder(opts) {
 	};
 
 	/** */
-	routes.POST = function(req, res) {
-		return _Q.fcall(function() {
+	routes.POST = function validity_post(req, res) {
+		return _Q.fcall(function validity_post_() {
 			return opts.get_user(req, res);
-		}).then(function(user) {
+		}).then(function validity_post_2(user) {
 			if(is.undef(user)) { throw new HTTPError(401); }
 			if(is.obj(user) && is.uuid(user.$id)) {
 				return user.$id;
@@ -112,7 +112,7 @@ module.exports = function validity_builder(opts) {
 				return user;
 			}
 			throw new TypeError("Invalid params");
-		}).then(function(user_uuid) {
+		}).then(function validity_post_3(user_uuid) {
 
 			var secret_uuid = require('node-uuid').v4();
 			var crypted_secret_uuid = crypt(secret_uuid, crypt.createSalt('md5'));
@@ -122,10 +122,10 @@ module.exports = function validity_builder(opts) {
 				var user = db.fetch();
 				return db.update(user, {
 					'email_validation_hash': crypted_secret_uuid
-				}).commit().then(function() {
+				}).commit().then(function validity_post_fetch_user() {
 					return user;
 				});
-			}).then(function(user) {
+			}).then(function validity_post_4(user) {
 
 				// Ignore @example.com emails
 				if(user.email.substr(user.email.indexOf('@')) === '@example.com') {
@@ -138,12 +138,12 @@ module.exports = function validity_builder(opts) {
 					'secret_url': secret_url
 				};
 
-				return _Q.fcall(function() {
+				return _Q.fcall(function validity_post_5() {
 					if(!is.func(opts.verification_message)) {
 						return opts.verification_message;
 					}
 					return opts.verification_message(msg_params, req, res);
-				}).then(function(msg) {
+				}).then(function validity_post_6(msg) {
 					if(is.array(msg.body)) {
 						msg.body = msg.body.join('\n');
 					}
@@ -153,11 +153,11 @@ module.exports = function validity_builder(opts) {
 					debug.assert(msg.body).is('string');
 
 					// Convert parameters
-					msg.subject = msg.subject.replace(/%{([^}]+)}/g, function(m, key) {
+					msg.subject = msg.subject.replace(/%{([^}]+)}/g, function validity_post_subject_replace(m, key) {
 						return msg_params[key];
 					});
 
-					msg.body = msg.body.replace(/%{([^}]+)}/g, function(m, key) {
+					msg.body = msg.body.replace(/%{([^}]+)}/g, function validity_post_body_replace(m, key) {
 						return msg_params[key];
 					});
 
@@ -166,7 +166,7 @@ module.exports = function validity_builder(opts) {
 					 * than the HTTP request has time to wait.
 					 */
 
-					NR.wtfcall("/mailer/sending/validity-email", function() {
+					NR.wtfcall("/mailer/sending/validity-email", function validity_post_nr_wtfcall_() {
 						var from = opts.smtp.from || 'no-reply@example.com';
 						debug.log('Sending email to ', user.email, ' (with from:', from, ')');
 						return opts.mailer.send({
@@ -174,14 +174,14 @@ module.exports = function validity_builder(opts) {
 							to: user.email,
 							subject: msg.subject,
 							body: msg.body
-						}).fail(function(err) {
+						}).fail(function validity_post_nr_wtfcall_failed(err) {
 							debug.error('Sending email to ' + user.email + ' failed:', err);
 							return _Q.reject(err);
 						});
 					});
 				});
 
-			}).then(function() {
+			}).then(function validity_post_redirect() {
 				res.redirect(303, opts.path(req, res) );
 			}));
 		});
@@ -202,7 +202,7 @@ module.exports = function validity_builder(opts) {
 	}
 
 	/** */
-	routes.verify[':uuid'].GET = function(req, res) {
+	routes.verify[':uuid'].GET = function validity_verify_uuid_get(req, res) {
 		return _Q.fcall(function() {
 			return opts.get_user(req, res);
 		}).then(function(req_user) {
@@ -249,7 +249,7 @@ module.exports = function validity_builder(opts) {
 					return db.rollback();
 				});
 
-			}).then(function() {
+			}).then(function validity_verify_redirect() {
 				res.redirect(303, ref(req, opts.success_redirect_target) );
 			}));
 		});
