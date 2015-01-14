@@ -32,7 +32,7 @@ module.exports = function validity_builder(opts) {
 	opts.user_type = opts.user_type || 'User';
 
 	// The path where to redirect if user verifies successfully
-	opts.success_redirect_target = opts.success_redirect_target || '/';
+	opts.success_redirect_target = opts.hasOwnProperty('success_redirect_target') ? opts.success_redirect_target : '/';
 
 	if(is.undef(opts.path)) {
 		opts.path = 'api/profile/validity';
@@ -94,7 +94,8 @@ module.exports = function validity_builder(opts) {
 			return {
 				'status': !!( user.email_valid ),
 				'email_sent': !!( user.email_validation_hash ),
-				'description': 'When you POST here, an email is sent to validate your email address.'
+				'description': 'When you POST here, an email is sent to validate your email address.',
+				'verify': {'$ref': ref(req, 'api/profile/validity/verify/:uuid')}
 			};
 		});
 	};
@@ -135,7 +136,8 @@ module.exports = function validity_builder(opts) {
 				var msg_params = {
 					'user': user,
 					'secret_uuid': secret_uuid,
-					'secret_url': secret_url
+					'secret_url': secret_url,
+					'site_url': ref(req, '/')
 				};
 
 				return _Q.fcall(function validity_post_5() {
@@ -250,6 +252,9 @@ module.exports = function validity_builder(opts) {
 				});
 
 			}).then(function validity_verify_redirect() {
+				if(!opts.success_redirect_target) {
+					return {'ok': true};
+				}
 				res.redirect(303, ref(req, opts.success_redirect_target) );
 			}));
 		});

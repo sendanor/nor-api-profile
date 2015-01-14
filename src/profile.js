@@ -46,6 +46,7 @@ module.exports = function profile_builder(opts) {
 					user.validity = {
 						'status': !!( req.user.email_valid ),
 						'email_sent': !!( req.user.email_validation_hash ),
+						'verify': {'$ref': ref(req, 'api/profile/validity/verify/:uuid')},
 						'$ref': ref(req, opts.path + '/validity')
 					};
 					user.$ref = ref(req, opts.path);
@@ -105,6 +106,7 @@ module.exports = function profile_builder(opts) {
 		'pg': opts.pg,
 		'smtp': opts.smtp,
 		'mailer': opts.mailer,
+		'success_redirect_target': opts.validity_success_redirect_target,
 		'verification_message': opts.verification_message,
 		'user_type': opts.user_type,
 		'path': opts.path + '/validity',
