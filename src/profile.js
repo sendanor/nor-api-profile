@@ -63,6 +63,7 @@ module.exports = function profile_builder(opts) {
 		return $Q.fcall(function profile_get_() {
 			if(!req.user) { throw new HTTPError(401); }
 			debug.assert(req.user).is('object');
+			//debug.log('req.user.groups = ', req.user.groups);
 			return opts.view.element(req, res, {
 				'elementPath': 'api/profile'
 			})(req.user);
