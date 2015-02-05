@@ -1,6 +1,6 @@
 {
   "name": "nor-api-profile",
-  "version": "0.1.49",
+  "version": "0.1.50",
   "description": "Profile API module",
   "main": "src/index.js",
   "scripts": {
@@ -23,7 +23,7 @@
   "homepage": "https://github.com/sendanor/nor-api-profile",
   "dependencies": {
     "q":               ">= 1.0.1  < 1.1.0",
-    "nor-nopg":        ">= 0.1.109 < 0.2.0",
+    "nor-nopg":        ">= 0.1.110 < 0.2.0",
     "nor-debug":       ">= 0.1.52 < 0.2.0",
     "nor-is":          ">= 0.1.16 < 0.2.0",
     "nor-function":          ">= 0.1.6 < 0.2.0",
