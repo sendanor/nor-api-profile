@@ -134,6 +134,8 @@ module.exports = function validity_builder(opts) {
 				}
 
 				var msg_params = {
+					'name': user && user.name || undefined,
+					'email': user && user.email || undefined,
 					'user': user,
 					'secret_uuid': secret_uuid,
 					'secret_url': secret_url,
